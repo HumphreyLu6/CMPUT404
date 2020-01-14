@@ -19,8 +19,37 @@ def get_remote_ip(host):
     print(f"Ip address of {host} is {remote_ip}")
     return remote_ip
 
-def send_data(servicesocket, payload):
-    
+def send_data(serversocket, payload):
+    print("Sending payload")
+    try:
+        serversocket.sendall(payload.encode())
+    except socket.error:
+        print("Send failed")
+        sys.exit()
+    print("Payload sent successfully")
+
+def main():
+    try:
+        host = "www.google.com"
+        port = 80
+        payload = "GET / HTTP/1.0\r\nHost: {0}\r\n\r\n"
+        buffer_size = 4096
+
+        s = create_tcp_socket()
+
+        remote_ip = get_remote_ip(host)
+
+        s.connect((remote_ip, port))
+        print("Socket Connected to{0} on ip {1}".format(host, remote_ip))
+
+        send_data(s, payload)
+        s.shutdown(socket.SHUT_WR)
+
+        full_data = b''
+        
+        while True:
+            data = s.recv(buffer_size)
+            
 
 def main():
     try:
