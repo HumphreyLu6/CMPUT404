@@ -1,11 +1,12 @@
 import socket, time, sys
+from multiprocessing import Process
 
 HOST = ""
 PORT = 8001
 BUFFER_SIZE = 1024
 
 def get_remote_ip(host):
-    print("Getting IP for {0}".format(host))
+    print("Getting IP for {host}")
     try:
         remote_ip = socket.gethostbyname(host)
     except socket.gaierror:
@@ -14,6 +15,11 @@ def get_remote_ip(host):
 
     print("Ip address of {0} is {1}".format(host, remote_ip))
     return remote_ip
+
+def handle_request(conn, addr, proxy_end):
+    send_full_data = conn.recv(BUFFER_SIZE)
+    print("Sending recieved data {0} to google".format(send_full_data))
+    proxy_end.shutdown(socket.SHUT_WR)
 
 def main():
 
@@ -32,15 +38,10 @@ def main():
                 remote_ip = get_remote_ip(host)
                 
                 proxy_end.connect((remote_ip, port))
-
-                send_full_data = conn.recv(BUFFER_SIZE)
-                print("Sending recieved data{0} to google".format(send_full_data))
-                proxy_end.sendall(send_full_data)
-                proxy_end.shutdown(socket.SHUT_WR)
-
-                data = proxy_end.recv(BUFFER_SIZE)
-                print("Sending recieved data{0} to client".format(data))
-                conn.send(data)
+                p = Process(target=handle_request, args = (conn, addr, proxy_end))
+                p.daemon = True
+                p.start()
+                print("Start process", p)
             conn.close()
 
 if __name__ == "__main__":
